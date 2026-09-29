@@ -33,6 +33,10 @@ Tip: judges can switch the event they land in by logging in again with the other
 code. Sign-ups create participant accounts (created → then back to the login page
 → sign in).
 
+🎬 **Demo videos** (screen recordings of the live portal): [01-judge-flow.webm](docs/demo/01-judge-flow.webm)
+— login with the event code, offline AI review, scoring; [02-organizer-flow.webm](docs/demo/02-organizer-flow.webm)
+— Mission Control, FairScore results with the "Why this rank?" explanation, Trust Center scan.
+
 ---
 
 ## How the app works
