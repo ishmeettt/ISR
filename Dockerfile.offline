@@ -1,0 +1,43 @@
+# ISR — single-container, fully offline edition.
+#
+# The whole portal (API + UI + database) in ONE image, one command:
+#
+#   cd frontend && npm run build        # prebuild the UI on the host
+#   docker build -f Dockerfile.offline -t isr-offline .
+#   docker run -d -p 8080:8000 -v isr_data:/data --name isr isr-offline
+#
+# Then open http://localhost:8080. Data persists in the isr_data volume
+# (SQLite at /data/isr.db); drop the -v flag for a throwaway instance.
+#
+# NO demo data: a fresh install boots with the four starter accounts only.
+# The organizer hosts their own events and adds repos by GitHub link from
+# the app. (Set SEED_DEMO=1 and provide fixtures.json to re-enable demo data.)
+#
+# The base is the locally built isr-backend image, so pip packages are baked
+# in and the build never touches a package index (works with no internet).
+
+FROM isr-backend:latest
+
+ENV ISR_SERVE_UI=1 \
+    ISR_UI_DIST=/app/ui/dist \
+    DATABASE_URL=sqlite+pysqlite:////data/isr.db \
+    SEED_DEMO=0 \
+    PYTHONUNBUFFERED=1
+
+# Current backend code (the base image can predate the newest API).
+COPY backend/app /app/app/
+
+# Prebuilt UI.
+COPY frontend/dist /app/ui/dist/
+RUN mkdir -p /data /repos /app/repos
+
+COPY docker/offline-entrypoint.sh /app/offline-entrypoint.sh
+RUN chmod +x /app/offline-entrypoint.sh
+
+# First boot creates /data/isr.db with accounts only; later boots reuse it.
+# Repo clones persist in the NAMED volume isr_repos, so replacing the
+# container (redeploys) keeps every judge-added checkout.
+VOLUME /data
+VOLUME /repos
+EXPOSE 8000
+ENTRYPOINT ["/app/offline-entrypoint.sh"]

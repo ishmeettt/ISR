@@ -1,0 +1,51 @@
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: isr
+      POSTGRES_PASSWORD: isr
+      POSTGRES_DB: isr
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U isr -d isr"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5433:5432" # host access for local dev only
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    networks:
+      default:
+        ipv4_address: 172.28.0.10
+    environment:
+      DATABASE_URL: postgresql+psycopg://isr:isr@postgres:5432/isr
+      SEED_FIXTURES: /app/fixtures.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:

@@ -1,0 +1,19 @@
+[portal]
+base_url = "http://localhost:8080"
+
+[tiers]
+claimed = ["T1", "T2"]
+pitch = "Deterministic core, explainable judging: seeded fixture portal with deadline-locked submissions and judge-isolated scoring."
+
+[auth]
+organizer   = "Cookie: session=91e0d703c0dcdda4b06db2bf97998b59"
+judge_a     = "Cookie: session=dae42f9e7001d0f7a6a27d27e86eb0b8"
+judge_b     = "Cookie: session=225960e58b0bd011a87e787be5f9e2bf"
+participant = "Cookie: session=69e6a774b2c036ca34e758c4e8261867"
+
+[routes]
+gallery      = "/api/gallery"
+submit       = "/api/projects"
+judge_scores = "/api/judge/scores"
+peer_scores  = "/api/judge/scores?judge_email=diego.herrera@example.org"
+csv_export   = "/api/export.csv"

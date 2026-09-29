@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+
+# Build output: frontend/dist is COMMITTED on purpose so the offline image can
+# be built from a plain clone with no Node.js installed. If you edit the UI,
+# rebuild it (cd frontend && npm install && npm run build) and commit dist.
+dist/
+!frontend/dist/
+
+.env
+*.log
+*.db
+*.tsbuildinfo
+.dogfood.local.toml
+.freebuff/
+.pytest_cache/
+acceptance-report.txt
+
+# Judge-side repo checkouts (runtime data, never source)
+repos/

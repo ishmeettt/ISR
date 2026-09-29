@@ -1,0 +1,11 @@
+# Keep build contexts small: deps are installed inside the images.
+# (frontend/dist is NOT ignored: Dockerfile.offline embeds the prebuilt UI.)
+.git
+.freebuff
+**/__pycache__
+**/*.pyc
+backend/.venv
+frontend/node_modules
+*.log
+*.db
+docs
