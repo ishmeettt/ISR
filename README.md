@@ -26,8 +26,8 @@ Evaluator card at login to open that event's workspace:
 
 | Event code | Event | State |
 |---|---|---|
-| **`SAMPLE26`** | Sample Hack 2026 | **Has projects** — 41 seeded projects and 126 evaluations; submissions closed (good for browsing scores, results, Trust Center, exports) |
-| **`KYF5ES5P`** | DogFood | **Empty** — a brand-new event for a live demo: add repos by GitHub link, AI-evaluate, score, run FairScore from zero |
+| **`SAMPLE26`** | Sample Hack 2026 | **Ships with the fixture** — 41 seeded projects and 126 evaluations; submissions closed (good for browsing scores, results, Trust Center, exports) |
+| **`KYF5ES5P`** | DogFood | **Empty event created live on the demo instance** (not in the fixture — a fresh install won't have it). On your own instance, create an event and use *its* code |
 
 Tip: judges can switch the event they land in by logging in again with the other
 code. Sign-ups create participant accounts (created → then back to the login page
@@ -60,15 +60,20 @@ an event            (deadline enforced         (offline AI analysis       Trust 
 
 ## Quick start (Windows — desktop app)
 
-Once the image is built (see *Building from source* below), ISR runs like any
+One-time setup: run the two `docker build` steps from *Building from source*
+below (a plain clone is enough — no Node.js needed). Then ISR runs like any
 normal Windows program:
 
 1. **Double-click the `ISR` shortcut on the Desktop** (or `desktop\Start ISR.bat`).
 2. The launcher starts Docker inside WSL Ubuntu, boots the `isr` container, waits
-   for the engine to answer, pins WSL open so the portal never silently drops, and
-   opens ISR in its own app window (no browser chrome, own taskbar icon).
-3. Log in with a demo account (table below) or **Create account**.
+   for the engine to answer, and opens ISR in its own app window (no browser
+   chrome, own taskbar icon).
+3. Log in with a demo account (table at the top) or **Create account**.
 4. **`desktop\Stop ISR.bat`** stops the engine when you're done.
+
+The launcher also installs the **ISR Keepalive** scheduled task automatically
+(no admin rights): a hidden watchdog that keeps the WSL2 VM and the container
+up, so `localhost:8080` survives app and machine restarts (box below).
 
 Data persists across restarts in the `isr_data` / `isr_repos` volumes. Launcher
 problems? Read `%LOCALAPPDATA%\ISR\launcher.log`.
@@ -97,34 +102,54 @@ Reinstall/repair it any time: `powershell -File desktop\isr-keepalive-install.ps
 Activity log: `%LOCALAPPDATA%\ISR\keepalive.log`. `desktop\Stop ISR.bat`
 suspends the watchdog (flag file) until the next Start ISR.
 
-## Quick start (any machine with Docker)
+## Start from a fresh clone (any OS with Docker)
+
+Four commands, no Node.js needed (the prebuilt UI ships in the repo):
 
 ```bash
+git clone <this-repo>
+cd isr                # the folder git just created (any name works)
+
+# build (two images; the first installs all Python deps)
+docker build -f backend/Dockerfile -t isr-backend:latest .
+docker build -f Dockerfile.offline -t isr-offline:latest .
+
+# run — with the demo data (Sample Hack 2026 + accounts from the table at the top)
 docker run -d --name isr -p 8080:8000 \
   -v isr_data:/data -v isr_repos:/repos \
-  --restart unless-stopped isr-offline:latest
+  -v "$PWD/fixtures.json:/app/fixtures.json:ro" \
+  -e SEED_DEMO=1 --restart unless-stopped isr-offline:latest
 ```
 
-Then open **http://localhost:8080** (interactive API docs at `/docs`).
+(PowerShell: use `${PWD}\fixtures.json` in the mount.)
 
-- A fresh install boots with **accounts only, no demo data** — the organizer hosts
-  their own events. Demo data is opt-in (next section).
+Then open **http://localhost:8080** (interactive API docs at `/docs`) and sign
+in with any account from the table at the top — password `isr-dev-password`.
+First boot seeds the database; every later boot reuses the `isr_data` volume.
+
+- **No demo data?** Drop the `fixtures.json` mount and the `SEED_DEMO=1` line —
+  the portal boots with the starter accounts only and the organizer hosts
+  their own events.
 - Judge-added repo clones live in the `isr_repos` volume; both volumes survive
   container replacement.
-- Prefer the classic three-container stack? `docker compose up` (nginx :8080 →
-  backend :8000 → Postgres).
+- Prefer the classic three-container stack (nginx :8080 → backend :8000 →
+  Postgres)? `docker compose up --build`.
+- On Windows you can skip all of this and use the desktop launcher above —
+  it does the same thing inside WSL and adds a self-healing watchdog.
 
 ## Building from source
 
 ```bash
-# 1. build the UI bundle (needs node once)
+# 0. optional: rebuild the UI bundle (needs Node once). A clone already ships
+#    the prebuilt bundle in frontend/dist, so you can skip this step.
 cd frontend && npm install && npm run build && cd ..
 
-# 2. build the backend base, then the offline image (no registry access needed)
+# 1. build the backend base, then the offline image (no registry access needed)
 docker build -f backend/Dockerfile -t isr-backend:latest .
 docker build -f Dockerfile.offline -t isr-offline:latest .
 
-# 3. run (command above) — or on this machine, just double-click the ISR shortcut
+# 2. run — copy the docker run command from "Start from a fresh clone" above
+#    (it includes the demo-data flags) — or on Windows, double-click the ISR shortcut
 ```
 
 ---
@@ -146,8 +171,9 @@ judges and organizers are provisioned by seeding/`docker exec`, not by signup.
 
 ### Demo data (Sample Hack 2026)
 
-On this machine the portal runs with the DOGFOOD 2026 fixture seeded
-(`SEED_DEMO=1` + `fixtures.json` mounted at `/app/fixtures.json`):
+Run the portal with the DOGFOOD 2026 fixture seeded by adding `SEED_DEMO=1`
+and mounting `fixtures.json` at `/app/fixtures.json` — exactly what the
+"Start from a fresh clone" quick start does:
 
 - Event **Sample Hack 2026**, share code **`SAMPLE26`**, 8 tracks, 40 teams,
   **41 projects**, 126 seeded evaluations (submissions closed 2026-03-01 —
